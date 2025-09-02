@@ -24,6 +24,11 @@ def find_gamedata_from_current():
         "../MODS",
         "../../MODS",
         
+        # Look for MO2-style lowercase mods directories
+        "../mods",
+        "../../mods",
+        "../../../mods",
+        
         # Look for No Man's Sky game structure
         "../No Man's Sky/GAMEDATA/MODS",
         "../../No Man's Sky/GAMEDATA/MODS",
@@ -56,6 +61,22 @@ def find_gamedata_from_current():
         if gamedata_path.exists() and gamedata_path.is_dir():
             return str(gamedata_path)
         
+        # Look for standalone mods directory (MO2 style)
+        mods_path = current_dir / "mods"
+        if mods_path.exists() and mods_path.is_dir():
+            # Verify it has mod subdirectories
+            subdirs = [item for item in mods_path.iterdir() if item.is_dir()]
+            if len(subdirs) > 0:
+                return str(mods_path)
+        
+        # Look for uppercase MODS directory
+        mods_upper_path = current_dir / "MODS"
+        if mods_upper_path.exists() and mods_upper_path.is_dir():
+            # Verify it has mod subdirectories
+            subdirs = [item for item in mods_upper_path.iterdir() if item.is_dir()]
+            if len(subdirs) > 0:
+                return str(mods_upper_path)
+        
         # Look for No Man's Sky folder in current directory
         nms_path = current_dir / "No Man's Sky" / "GAMEDATA" / "MODS"
         if nms_path.exists() and nms_path.is_dir():
@@ -70,8 +91,8 @@ def find_gamedata_from_current():
     return None
 
 
-def scan_directory_tree(base_path, target_name="MODS", max_depth=3):
-    """Recursively scan directory tree looking for MODS folders"""
+def scan_directory_tree(base_path, target_names=["MODS", "mods"], max_depth=3):
+    """Recursively scan directory tree looking for MODS or mods folders"""
     base_path = Path(base_path)
     found_paths = []
     
@@ -84,8 +105,8 @@ def scan_directory_tree(base_path, target_name="MODS", max_depth=3):
                 if not item.is_dir():
                     continue
                 
-                # Check if this is a MODS folder with contents
-                if item.name == target_name:
+                # Check if this is a MODS or mods folder with contents
+                if item.name in target_names:
                     subdirs = [sub for sub in item.iterdir() if sub.is_dir()]
                     if len(subdirs) > 0:
                         found_paths.append(str(item))
