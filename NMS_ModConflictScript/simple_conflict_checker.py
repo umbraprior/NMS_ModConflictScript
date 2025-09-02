@@ -64,7 +64,7 @@ def main():
         for file_path, mods in conflicts.items():
             total_affected_mods.update(mods)
         
-        total_mods = len([d for d in Path('../GAMEDATA/MODS').iterdir() if d.is_dir()])
+        total_mods = len([d for d in mods_dir.iterdir() if d.is_dir()])
         
         output_lines.append("SUMMARY:")
         output_lines.append(f"  Found {len(conflicts)} conflicting MBIN files")
