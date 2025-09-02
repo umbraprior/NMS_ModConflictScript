@@ -155,6 +155,9 @@ echo.
 set /p mods_path="Enter the full path to your MODS folder: "
 if "%mods_path%"=="" goto CUSTOM_PATH
 
+REM Remove quotes if user added them manually
+set "mods_path=%mods_path:"=%"
+
 :VERIFY_PATH
 echo !YELLOW!===============================================================================!RESET!
 echo !YELLOW!                              PATH VERIFICATION!RESET!
@@ -181,10 +184,20 @@ if %verify_exit_code%==0 (
     )
     
 ) else (
-    REM Path verification failed
+    REM Path verification failed - show detailed error
+    echo !RED!ERROR: Path verification failed!!RESET!
+    echo.
+    echo !YELLOW!Debug information:!RESET!
+    type temp_verify_result.json 2>nul || echo No error details available
     del temp_verify_result.json 2>nul
-    echo !RED!ERROR: The specified path does not exist or cannot be accessed!!RESET!
-    echo Please check the path and try again.
+    echo.
+    echo !CYAN!Common issues:!RESET!
+    echo - Path contains typos or doesn't exist
+    echo - Path requires different permissions  
+    echo - Path exists but contains no mod folders
+    echo - Path contains special characters
+    echo.
+    echo !YELLOW!Please check the path and try again.!RESET!
     echo.
     pause
     cls

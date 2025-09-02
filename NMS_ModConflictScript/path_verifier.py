@@ -13,13 +13,22 @@ def verify_mods_path(mods_path):
     """Verify a MODS folder path and count mod folders"""
     path = Path(mods_path)
     
+    # Debug info for troubleshooting
+    debug_info = {
+        "original_path": mods_path,
+        "resolved_path": str(path.resolve()) if path.exists() else str(path),
+        "parent_exists": path.parent.exists() if path.parent != path else False,
+        "is_absolute": path.is_absolute()
+    }
+    
     # Check if path exists
     if not path.exists():
         return {
             "status": "error",
-            "error": "path_not_found",
-            "message": "The specified path does not exist",
-            "path": str(path)
+            "error": "path_not_found", 
+            "message": f"The specified path does not exist: {path}",
+            "path": str(path),
+            "debug": debug_info
         }
     
     # Check if it's a directory
@@ -27,8 +36,9 @@ def verify_mods_path(mods_path):
         return {
             "status": "error",
             "error": "not_directory",
-            "message": "The specified path is not a directory",
-            "path": str(path)
+            "message": f"The specified path is not a directory: {path}",
+            "path": str(path),
+            "debug": debug_info
         }
     
     # Count mod folders (directories only)
@@ -49,6 +59,7 @@ def verify_mods_path(mods_path):
         
         if mod_count == 0:
             result["warning"] = "No mod folders found in this directory"
+            result["debug"] = debug_info
         elif mod_count > 10:
             result["note"] = f"Showing first 10 of {mod_count} mod folders"
             
@@ -59,29 +70,50 @@ def verify_mods_path(mods_path):
             "status": "error",
             "error": "permission_denied",
             "message": "Permission denied accessing the directory",
-            "path": str(path)
+            "path": str(path),
+            "debug": debug_info
         }
     except Exception as e:
         return {
             "status": "error",
             "error": "unknown_error",
             "message": f"Error reading directory: {str(e)}",
-            "path": str(path)
+            "path": str(path),
+            "debug": debug_info
         }
 
 
 def main():
     """Main function to verify MODS path"""
-    if len(sys.argv) != 2:
+    # Debug: Show what arguments we actually received
+    arg_debug = {
+        "argc": len(sys.argv),
+        "argv": sys.argv,
+        "joined_args": " ".join(sys.argv[1:]) if len(sys.argv) > 1 else ""
+    }
+    
+    if len(sys.argv) < 2:
         print(json.dumps({
             "status": "error",
-            "error": "invalid_args",
-            "message": "Usage: path_verifier.py <mods_path>"
+            "error": "no_args",
+            "message": "Usage: path_verifier.py <mods_path>",
+            "debug_args": arg_debug
         }))
         return 1
+    elif len(sys.argv) > 2:
+        # Multiple arguments might mean the path with spaces was split
+        # Try joining them back together
+        mods_path = " ".join(sys.argv[1:])
+        # Write warning to stderr (won't interfere with JSON output)
+        sys.stderr.write(f"WARNING: Multiple arguments detected, joining as single path: {mods_path}\n")
+    else:
+        mods_path = sys.argv[1]
     
-    mods_path = sys.argv[1]
     result = verify_mods_path(mods_path)
+    # Add argument debugging to the result
+    if result["status"] == "error":
+        result["debug_args"] = arg_debug
+    
     print(json.dumps(result, indent=2))
     
     # Return appropriate exit code
