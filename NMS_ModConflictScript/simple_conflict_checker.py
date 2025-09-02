@@ -26,8 +26,8 @@ def find_mod_conflicts(mods_dir):
                 # Get relative path from mod root
                 rel_path = file_path.relative_to(mod_dir)
                 
-                # Only check MBIN and MXML files
-                if rel_path.suffix.lower() in {'.mbin', '.mxml'}:
+                # Only check MBIN files
+                if rel_path.suffix.lower() == '.mbin':
                     file_to_mods[str(rel_path)].append(mod_name)
     
     # Find conflicts
@@ -58,26 +58,16 @@ def main():
     if not conflicts:
         output_lines.append("No conflicts found! All mods modify different files.")
     else:
-        # Analyze conflicts by file type and mod count for summary
-        mbin_conflicts = 0
-        mxml_conflicts = 0
+        # Analyze conflicts and mod count for summary
         total_affected_mods = set()
         
         for file_path, mods in conflicts.items():
-            if file_path.lower().endswith('.mbin'):
-                mbin_conflicts += 1
-            elif file_path.lower().endswith('.mxml'):
-                mxml_conflicts += 1
             total_affected_mods.update(mods)
         
         total_mods = len([d for d in Path('../GAMEDATA/MODS').iterdir() if d.is_dir()])
         
         output_lines.append("SUMMARY:")
-        output_lines.append(f"  Found {len(conflicts)} conflicting files")
-        if mbin_conflicts > 0:
-            output_lines.append(f"  - {mbin_conflicts} MBIN files")
-        if mxml_conflicts > 0:
-            output_lines.append(f"  - {mxml_conflicts} MXML files")
+        output_lines.append(f"  Found {len(conflicts)} conflicting MBIN files")
         output_lines.append(f"  {len(total_affected_mods)} of your {total_mods} mods are involved")
         output_lines.append("")
         output_lines.append("CONFLICTS:")

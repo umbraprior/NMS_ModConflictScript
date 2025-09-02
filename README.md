@@ -4,7 +4,7 @@ A simple tool to detect conflicting files between No Man's Sky mods.
 
 ## What it does
 
-Scans your No Man's Sky mods folder and identifies which mods have conflicting `.mbin` and `.mxml` files. Generates a detailed report showing exactly which files conflict and which mods are affected.
+Scans your No Man's Sky mods folder and identifies which mods have conflicting `.mbin` files. Generates a detailed report showing exactly which files conflict and which mods are affected.
 
 ## Requirements
 
@@ -14,7 +14,7 @@ Scans your No Man's Sky mods folder and identifies which mods have conflicting `
 ## Installation
 
 1. Download or clone this repository
-2. Extract `NMS_ModConflictScript` to any location
+2. Extract `NMS_ModConflictScript` to any folder
 3. Run `check_conflicts.bat`
 
 ## Features
