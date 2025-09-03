@@ -158,6 +158,10 @@ if "%mods_path%"=="" goto CUSTOM_PATH
 REM Remove quotes if user added them manually
 set "mods_path=%mods_path:"=%"
 
+REM Remove leading and trailing spaces
+for /f "tokens=* delims= " %%i in ("%mods_path%") do set "mods_path=%%i"
+for /l %%a in (1,1,31) do if "!mods_path:~-1!"==" " set "mods_path=!mods_path:~0,-1!"
+
 :VERIFY_PATH
 echo !YELLOW!===============================================================================!RESET!
 echo !YELLOW!                              PATH VERIFICATION!RESET!

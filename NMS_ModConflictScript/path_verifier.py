@@ -11,6 +11,8 @@ from pathlib import Path
 
 def verify_mods_path(mods_path):
     """Verify a MODS folder path and count mod folders"""
+    # Strip leading and trailing whitespace from the path
+    mods_path = mods_path.strip()
     path = Path(mods_path)
     
     # Debug info for troubleshooting
