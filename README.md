@@ -1,15 +1,11 @@
-# No Man's Sky Mod Conflict Checker
+# No Man's Sky Mod Conflict Suite
 
-A simple tool to detect conflicting files between No Man's Sky mods.
+A comprehensive suite of tools for managing No Man's Sky mod conflicts.
 
-## What it does
+## Tools Included
 
-Scans your No Man's Sky mods folder and identifies which mods have conflicting `.mbin` files. Generates a detailed report showing exactly which files conflict and which mods are affected.
-
-## What it doesn't do
-
-Edit your mod files
-Manage the conflicts in any way
+1. **Mod Conflict Checker** - Detects and reports MBIN file conflicts between mods with optional log file output
+2. **Additional Tools** - *Coming Soon* - More mod management utilities planned
 
 ## Requirements
 
@@ -19,14 +15,15 @@ Manage the conflicts in any way
 ## Installation
 
 1. Download or clone this repository
-2. Extract `NMS_ModConflictScript` to any folder
-    a. Do not place it or the files within to the folder where your mods are located
-    b. Never place your mod folders or files within this directory
-3. Run `check_conflicts.bat`
+2. Extract `NMS_ModConflictSuite` to any folder
+> [!WARNING]
+> Do not place it in your mods folder. Never place mod files anywhere within this directory.
+3. Double-click `run_mcs.bat` to start the suite
 
-## Features
 
-- Auto-detects Steam installation and No Man's Sky location
-- Interactive menu for different mod folder locations
-- Detailed conflict reports with summary statistics
-- Optional log file output
+### Auto-Update System
+- Automatically checks for updates on startup
+- Downloads only changed files for efficiency
+- Creates backups before updating
+- Handles integrity verification and repair
+

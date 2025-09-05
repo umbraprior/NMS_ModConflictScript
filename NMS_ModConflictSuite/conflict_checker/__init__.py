@@ -1,0 +1,1 @@
+# Mod conflict detection utilities

@@ -24,13 +24,14 @@ BRANCH = "main"
 
 # Files to track for updates (relative to NMS_ModConflictScript folder)
 TRACKED_FILES = [
-    "check_conflicts.bat",
-    "gamedata_finder.py",
-    "json_extract.py", 
-    "path_verifier.py",
-    "simple_conflict_checker.py",
-    "steam_finder.py",
-    "auto_updater.py"
+    "run_mcs.bat",
+    "conflict_checker/check_conflicts.bat",
+    "finders/gamedata_finder.py",
+    "finders/steam_finder.py",
+    "conflict_checker/path_verifier.py",
+    "conflict_checker/simple_conflict_checker.py",
+    "updater/json_extract.py", 
+    "updater/auto_updater.py"
 ]
 
 # Version file to track current state
@@ -46,9 +47,18 @@ def get_file_hash(file_path):
         return None
 
 
+def is_first_run(version_info=None):
+    """Check if this is the first run (no commit hash recorded)"""
+    if version_info is None:
+        version_info = load_version_info()
+    
+    last_commit = version_info.get("last_commit")
+    return last_commit is None or last_commit == "null"
+
+
 def load_version_info():
     """Load current version information"""
-    script_dir = Path(__file__).parent
+    script_dir = Path(__file__).parent 
     version_file_path = script_dir / VERSION_FILE
     
     if not version_file_path.exists():
@@ -126,8 +136,8 @@ def get_file_from_repo(file_path, commit_sha):
         raise Exception(f"Failed to download {file_path}: {str(e)}")
 
 
-def check_for_updates(silent=False):
-    """Check if updates are available"""
+def check_for_updates(silent=False, include_integrity=False):
+    """Check if updates are available and optionally check file integrity"""
     try:
         if not silent:
             print("Checking for updates...")
@@ -138,36 +148,106 @@ def check_for_updates(silent=False):
         # Get latest commit
         latest_commit = get_latest_commit()
         
-        # If we don't have a recorded commit or it's different, check files
-        if current_version["last_commit"] != latest_commit["sha"]:
-            return {
-                "updates_available": True,
-                "latest_commit": latest_commit,
-                "current_commit": current_version["last_commit"]
-            }
+        result = {
+            "updates_available": False,
+            "latest_commit": latest_commit,
+            "current_commit": current_version["last_commit"]
+        }
+        
+        # If we need to include integrity check or if commit changed, check files
+        if include_integrity or current_version["last_commit"] != latest_commit["sha"]:
+            changed_files = get_changed_files(latest_commit["sha"])
+            missing_files = []
+            corrupted_files = []
+            updated_files = []
+            
+            # Check if this is first run (no stored commit hash)
+            first_run = is_first_run(current_version)
+            
+            for file_info in changed_files:
+                if "error" in file_info:
+                    # Could be missing file or network error
+                    base_dir = Path(__file__).parent.parent
+                    file_path = base_dir / file_info["name"]
+                    if not file_path.exists():
+                        missing_files.append(file_info["name"])
+                    else:
+                        # On first run, don't treat existing files as corrupted
+                        if not first_run:
+                            corrupted_files.append(file_info["name"])
+                elif file_info.get("current_hash") is None:
+                    missing_files.append(file_info["name"])
+                elif file_info.get("current_hash") != file_info.get("repo_hash"):
+                    if current_version["last_commit"] == latest_commit["sha"]:
+                        # Same repo version but different hash = corruption
+                        corrupted_files.append(file_info["name"])
+                    elif first_run:
+                        # On first run, files that don't match repo are just "existing"
+                        # Don't treat as corrupted or needing update unless missing
+                        pass
+                    else:
+                        # Different repo version = update available
+                        updated_files.append(file_info["name"])
+            
+            # Determine status
+            critical_issues = len(missing_files) + len(corrupted_files)
+            # On first run, only show updates available if there are actual missing files that need repair
+            if first_run:
+                has_updates = critical_issues > 0
+            else:
+                has_updates = len(updated_files) > 0 or current_version["last_commit"] != latest_commit["sha"]
+            
+            result.update({
+                "updates_available": has_updates,
+                "integrity_status": "critical" if critical_issues > 0 else "ok",
+                "missing_files": missing_files,
+                "corrupted_files": corrupted_files, 
+                "updated_files": updated_files,
+                "needs_repair": critical_issues > 0,
+                "can_repair": True
+            })
         else:
-            return {
-                "updates_available": False,
-                "latest_commit": latest_commit,
-                "current_commit": current_version["last_commit"]
-            }
+            result.update({
+                "integrity_status": "ok",
+                "missing_files": [],
+                "corrupted_files": [],
+                "updated_files": [],
+                "needs_repair": False,
+                "can_repair": True
+            })
+            
+        return result
             
     except Exception as e:
         return {
             "error": True,
-            "message": str(e)
+            "message": str(e),
+            "updates_available": False,
+            "integrity_status": "unknown",
+            "needs_repair": False,
+            "can_repair": False
         }
+
+
+def get_current_file_hash(file_name):
+    """Get hash of current local file"""
+    # Get the base directory (NMS_ModConflictScript)
+    base_dir = Path(__file__).parent.parent
+    file_path = base_dir / file_name
+    
+    try:
+        with open(file_path, 'rb') as f:
+            return hashlib.sha256(f.read()).hexdigest()
+    except (FileNotFoundError, PermissionError):
+        return None
 
 
 def get_changed_files(latest_commit_sha):
     """Determine which files have changed by comparing hashes"""
-    script_dir = Path(__file__).parent
     current_version = load_version_info()
     changed_files = []
     
     for file_name in TRACKED_FILES:
-        file_path = script_dir / file_name
-        
         try:
             # Get file content from repository
             repo_content = get_file_from_repo(file_name, latest_commit_sha)
@@ -175,10 +255,19 @@ def get_changed_files(latest_commit_sha):
             
             # Compare with local file hash
             local_hash = current_version["file_hashes"].get(file_name)
-            if local_hash != repo_hash:
+            current_file_hash = get_current_file_hash(file_name)
+            
+            # Consider file changed if:
+            # 1. We don't have a recorded hash for it, OR
+            # 2. The recorded hash doesn't match the repo hash, OR  
+            # 3. The current file hash doesn't match the repo hash
+            if (local_hash != repo_hash or 
+                current_file_hash != repo_hash or 
+                current_file_hash is None):
                 changed_files.append({
                     "name": file_name,
                     "local_hash": local_hash,
+                    "current_hash": current_file_hash,
                     "repo_hash": repo_hash,
                     "content": repo_content
                 })
@@ -206,19 +295,22 @@ def backup_file(file_path):
 
 def update_files(changed_files):
     """Update the changed files"""
-    script_dir = Path(__file__).parent
+    base_dir = Path(__file__).parent.parent
     updated_files = []
     failed_files = []
     
     for file_info in changed_files:
         file_name = file_info["name"]
-        file_path = script_dir / file_name
+        file_path = base_dir / file_name
         
         if "error" in file_info:
             failed_files.append(f"{file_name}: {file_info['error']}")
             continue
         
         try:
+            # Create directory if it doesn't exist
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            
             # Create backup
             backup_path = backup_file(file_path)
             
@@ -235,6 +327,28 @@ def update_files(changed_files):
             failed_files.append(f"{file_name}: {str(e)}")
     
     return updated_files, failed_files
+
+
+def initialize_version_tracking(latest_commit_sha):
+    """Initialize version tracking for first run"""
+    current_version = load_version_info()
+    
+    # If this is first run, record current file hashes and commit
+    if is_first_run(current_version):
+        print("Initializing version tracking...")
+        
+        # Record current file hashes
+        for file_name in TRACKED_FILES:
+            current_hash = get_current_file_hash(file_name)
+            if current_hash:
+                current_version["file_hashes"][file_name] = current_hash
+        
+        # Record current commit
+        current_version["last_commit"] = latest_commit_sha
+        current_version["last_check"] = get_latest_commit()["date"]
+        
+        save_version_info(current_version)
+        print("Version tracking initialized.")
 
 
 def perform_update():
@@ -387,6 +501,34 @@ def main():
             # Force update without prompting
             result = perform_update()
             print(json.dumps(result, indent=2))
+            return 0 if result["status"] != "error" else 1
+        elif sys.argv[1] == "--verify":
+            # Check installation integrity (unified with update check)
+            result = check_for_updates(silent=True, include_integrity=True)
+            
+            # If this is first run and no critical issues, initialize tracking
+            if (result.get("integrity_status") == "ok" and is_first_run()):
+                try:
+                    latest_commit = get_latest_commit()
+                    initialize_version_tracking(latest_commit["sha"])
+                except Exception:
+                    pass  # Ignore errors during initialization
+            
+            # Simplify output for batch file
+            output = {
+                "status": result.get("integrity_status", "unknown"),
+                "needs_repair": result.get("needs_repair", False),
+                "can_repair": result.get("can_repair", False),
+                "missing_files": result.get("missing_files", []),
+                "corrupted_files": result.get("corrupted_files", []),
+                "is_first_run": is_first_run()
+            }
+            
+            print(json.dumps(output, indent=2))
+            return 0 if result.get("integrity_status") != "critical" else 1
+        elif sys.argv[1] == "--repair":
+            # Repair installation (reuse update functionality)
+            result = perform_update()
             return 0 if result["status"] != "error" else 1
     
     # Interactive mode
