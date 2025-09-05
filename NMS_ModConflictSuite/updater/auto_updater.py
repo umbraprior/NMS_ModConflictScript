@@ -22,7 +22,7 @@ REPO_URL = f"https://github.com/{REPO_OWNER}/{REPO_NAME}"
 API_BASE = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}"
 BRANCH = "rewrite"
 
-# Files to track for updates (relative to NMS_ModConflictScript folder)
+# Files to track for updates (relative to NMS_ModConflictSuite folder)
 TRACKED_FILES = [
     "run_mcs.bat",
     "conflict_checker/check_conflicts.bat",
@@ -130,7 +130,7 @@ def get_file_from_repo(file_path, commit_sha):
     """Download a specific file from GitHub repository"""
     try:
         # Use raw GitHub URL to download file contents
-        url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/{commit_sha}/NMS_ModConflictScript/{file_path}"
+        url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/{commit_sha}/NMS_ModConflictSuite/{file_path}"
         return make_request(url)
     except Exception as e:
         raise Exception(f"Failed to download {file_path}: {str(e)}")
