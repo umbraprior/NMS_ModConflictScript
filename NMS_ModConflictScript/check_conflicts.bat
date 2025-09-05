@@ -18,6 +18,55 @@ set "WHITE=%ESC%[97m"
 title No Man's Sky Mod Conflict Checker
 cls
 
+REM Show loading screen while checking for updates
+echo !CYAN!===============================================================================!RESET!
+echo !CYAN!                    NO MAN'S SKY MOD CONFLICT CHECKER!RESET!
+echo !CYAN!===============================================================================!RESET!
+echo.
+echo !YELLOW!Initializing...!RESET!
+echo.
+echo !WHITE!• Checking for updates...!RESET!
+echo.
+
+REM Check for updates first
+python auto_updater.py --check > temp_update_check.json 2>&1
+set update_check_code=%errorlevel%
+
+if %update_check_code%==0 (
+    REM Parse update check result
+    for /f "usebackq delims=" %%i in (`python json_extract.py temp_update_check.json updates_available`) do set "updates_available=%%i"
+    del temp_update_check.json 2>nul
+    
+    if "!updates_available!"=="true" (
+        REM Updates are available - prompt user
+        echo !YELLOW!===============================================================================!RESET!
+        echo !YELLOW!                             UPDATE AVAILABLE!RESET!
+        echo !YELLOW!===============================================================================!RESET!
+        echo.
+        echo !GREEN!A new version of the NMS Mod Conflict Checker is available!!RESET!
+        echo.
+        set /p update_choice="Would you like to update now? (!GREEN!Y!RESET!/!RED!N!RESET!): "
+        
+        if /i "!update_choice!"=="Y" (
+            echo.
+            echo !CYAN!Running auto-updater...!RESET!
+            echo.
+            python auto_updater.py
+            
+            echo.
+            echo !YELLOW!Press any key to continue...!RESET!
+            pause >nul
+        ) else (
+            echo.
+            timeout /t 2 >nul
+        )
+        cls
+    )
+) else (
+    REM Update check failed, continue silently
+    del temp_update_check.json 2>nul
+)
+
 :CHOOSE_SOURCE
 echo !MAGENTA!===============================================================================!RESET!
 echo !MAGENTA!                    NO MAN'S SKY MOD CONFLICT CHECKER!RESET!
