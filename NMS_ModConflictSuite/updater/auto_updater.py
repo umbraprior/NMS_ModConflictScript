@@ -301,6 +301,33 @@ def backup_file(file_path):
     return None
 
 
+def cleanup_backup_files(updated_files, keep_backups=False):
+    """Clean up backup files after successful update"""
+    if keep_backups:
+        return
+    
+    cleaned_backups = []
+    failed_cleanups = []
+    
+    for file_info in updated_files:
+        backup_path = file_info.get("backup")
+        if backup_path and Path(backup_path).exists():
+            try:
+                Path(backup_path).unlink()
+                cleaned_backups.append(backup_path)
+            except Exception as e:
+                failed_cleanups.append(f"{backup_path}: {str(e)}")
+    
+    if cleaned_backups:
+        print(f"Cleaned up {len(cleaned_backups)} backup files")
+    if failed_cleanups:
+        print("Failed to clean up some backup files:")
+        for error in failed_cleanups:
+            print(f"  ✗ {error}")
+    
+    return cleaned_backups, failed_cleanups
+
+
 def update_files(changed_files):
     """Update the changed files"""
     base_dir = Path(__file__).parent.parent
@@ -359,7 +386,7 @@ def initialize_version_tracking(latest_commit_sha):
         print("Version tracking initialized.")
 
 
-def perform_update():
+def perform_update(keep_backups=False):
     """Perform the actual update process"""
     try:
         print("Starting update process...")
@@ -419,6 +446,13 @@ def perform_update():
         current_version["last_check"] = latest_commit["date"]
         save_version_info(current_version)
         
+        # Clean up backup files after successful update (unless keep_backups is True)
+        if not keep_backups:
+            print("\nCleaning up backup files...")
+            cleanup_backup_files(updated_files)
+        else:
+            print("\nBackup files preserved (--keep-backups was specified)")
+        
         return {
             "status": "success",
             "updated_files": updated_files,
@@ -471,8 +505,8 @@ def interactive_update():
         else:
             print("Please enter Y or N.")
     
-    # Perform update
-    result = perform_update()
+    # Perform update  
+    result = perform_update(keep_backups=False)  # Interactive mode defaults to cleaning backups
     
     if result["status"] == "error":
         print(f"\nUpdate failed: {result['message']}")
@@ -499,6 +533,11 @@ def interactive_update():
 
 def main():
     """Main function"""
+    # Check for --keep-backups flag
+    keep_backups = "--keep-backups" in sys.argv
+    if keep_backups:
+        sys.argv.remove("--keep-backups")
+    
     if len(sys.argv) > 1:
         if sys.argv[1] == "--check":
             # Just check for updates, don't prompt (for raw output)
@@ -507,7 +546,7 @@ def main():
             return 0 if not result.get("error") else 1
         elif sys.argv[1] == "--update":
             # Force update without prompting
-            result = perform_update()
+            result = perform_update(keep_backups=keep_backups)
             print(json.dumps(result, indent=2))
             return 0 if result["status"] != "error" else 1
         elif sys.argv[1] == "--verify":
@@ -600,6 +639,23 @@ def main():
                                 if current_hash:
                                     current_version["file_hashes"][file_name] = current_hash
                         save_version_info(current_version)
+                        
+                        # Clean up backup files created during repair (unless keep_backups is True)
+                        if not keep_backups:
+                            print("\nCleaning up backup files...")
+                            repair_files = []
+                            for file_name in missing_files + corrupted_files:
+                                if file_name not in failed_repairs:
+                                    base_dir = Path(__file__).parent.parent
+                                    file_path = base_dir / file_name
+                                    backup_path = file_path.with_suffix(file_path.suffix + '.backup')
+                                    if backup_path.exists():
+                                        repair_files.append({"backup": str(backup_path)})
+                            
+                            if repair_files:
+                                cleanup_backup_files(repair_files)
+                        else:
+                            print("\nBackup files preserved (--keep-backups was specified)")
                         
                         return 0
                     else:
