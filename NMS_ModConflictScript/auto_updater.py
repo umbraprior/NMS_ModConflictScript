@@ -126,10 +126,11 @@ def get_file_from_repo(file_path, commit_sha):
         raise Exception(f"Failed to download {file_path}: {str(e)}")
 
 
-def check_for_updates():
+def check_for_updates(silent=False):
     """Check if updates are available"""
     try:
-        print("Checking for updates...")
+        if not silent:
+            print("Checking for updates...")
         
         # Get current version info
         current_version = load_version_info()
@@ -242,7 +243,7 @@ def perform_update():
         print("Starting update process...")
         
         # Check for updates
-        update_check = check_for_updates()
+        update_check = check_for_updates(silent=False)
         if "error" in update_check:
             return {
                 "status": "error",
@@ -318,7 +319,7 @@ def interactive_update():
     print()
     
     # Check for updates
-    update_check = check_for_updates()
+    update_check = check_for_updates(silent=False)
     
     if "error" in update_check:
         print(f"Error checking for updates: {update_check['message']}")
@@ -378,8 +379,8 @@ def main():
     """Main function"""
     if len(sys.argv) > 1:
         if sys.argv[1] == "--check":
-            # Just check for updates, don't prompt
-            result = check_for_updates()
+            # Just check for updates, don't prompt (for raw output)
+            result = check_for_updates(silent=True)
             print(json.dumps(result, indent=2))
             return 0 if not result.get("error") else 1
         elif sys.argv[1] == "--update":
