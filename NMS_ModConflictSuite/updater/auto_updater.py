@@ -20,7 +20,7 @@ REPO_OWNER = "umbraprior"
 REPO_NAME = "NMS_ModConflictScript"
 REPO_URL = f"https://github.com/{REPO_OWNER}/{REPO_NAME}"
 API_BASE = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}"
-BRANCH = "main"
+BRANCH = "rewrite"
 
 # Files to track for updates (relative to NMS_ModConflictScript folder)
 TRACKED_FILES = [

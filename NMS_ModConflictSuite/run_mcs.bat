@@ -112,7 +112,7 @@ echo !MAGENTA!==================================================================
 echo !MAGENTA!                  NO MAN'S SKY MOD CONFLICT SUITE!RESET!
 echo !MAGENTA!===============================================================================!RESET!
 echo.
-echo !YELLOW!Welcome! Select a tool to use:!RESET!
+echo !YELLOW!Welcome, select a tool to use:!RESET!
 echo.
 echo !GREEN![1]!RESET! Mod Conflict Checker
 echo !CYAN![2]!RESET! Additional Tools !YELLOW!(Coming Soon)!RESET!

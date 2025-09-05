@@ -1,1 +1,2 @@
-NMS_ModConflictScript/updater/version_info.json
+# Prevent accidental hash upload
+NMS_ModConflictSuite/updater/version_info.json
