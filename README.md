@@ -15,6 +15,11 @@ A comprehensive suite of tools for managing No Man's Sky mod conflicts.
 ## Installation
 
 1. Download or clone this repository
+    <details>
+      <summary>Image</summary>
+      <img width="1273" height="753" alt="Untitled" src="https://github.com/user-attachments/assets/bf6ec4ff-7af1-4ce2-910f-667f146d3bff" />
+    </details>
+
 2. Extract `NMS_ModConflictSuite` to any folder
 > [!WARNING]
 > Do not place it in your mods folder. Never place mod files anywhere within this directory.
@@ -26,4 +31,3 @@ A comprehensive suite of tools for managing No Man's Sky mod conflicts.
 - Downloads only changed files for efficiency
 - Creates backups before updating
 - Handles integrity verification and repair
-
