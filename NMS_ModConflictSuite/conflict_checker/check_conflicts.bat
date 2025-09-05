@@ -53,13 +53,13 @@ goto CHOOSE_SOURCE
 echo.
 
 REM Call Python script to find Steam installation
-python ..\finders\steam_finder.py > temp_steam_result.json 2>&1
+python "%~dp0..\finders\steam_finder.py" > temp_steam_result.json 2>&1
 set steam_exit_code=%errorlevel%
 
 REM Parse the JSON result
 if %steam_exit_code%==0 (
     REM Steam found with mods - extract mods_path from JSON
-    for /f "usebackq delims=" %%i in (`python ..\updater\json_extract.py temp_steam_result.json mods_path`) do set "mods_path=%%i"
+    for /f "usebackq delims=" %%i in (`python "%~dp0..\updater\json_extract.py" temp_steam_result.json mods_path`) do set "mods_path=%%i"
     del temp_steam_result.json 2>nul
     
     echo !GREEN!Found No Man's Sky with mods at: !YELLOW!!mods_path!!RESET!
@@ -112,12 +112,12 @@ echo.
 echo Searching for GAMEDATA folder relative to script location...
 
 REM Call Python script to find GAMEDATA directory
-python ..\finders\gamedata_finder.py > temp_gamedata_result.json 2>&1
+python "%~dp0..\finders\gamedata_finder.py" > temp_gamedata_result.json 2>&1
 set gamedata_exit_code=%errorlevel%
 
 if %gamedata_exit_code%==0 (
     REM GAMEDATA found - extract mods_path from JSON
-    for /f "usebackq delims=" %%i in (`python ..\updater\json_extract.py temp_gamedata_result.json mods_path`) do set "mods_path=%%i"
+    for /f "usebackq delims=" %%i in (`python "%~dp0..\updater\json_extract.py" temp_gamedata_result.json mods_path`) do set "mods_path=%%i"
     del temp_gamedata_result.json 2>nul
     
     echo !GREEN!Found GAMEDATA/MODS at: !CYAN!!mods_path!!RESET!
@@ -171,12 +171,12 @@ echo Selected path: !CYAN!%mods_path%!RESET!
 echo.
 
 REM Call Python script to verify path and count mods
-python .\path_verifier.py "%mods_path%" > temp_verify_result.json 2>&1
+python "%~dp0path_verifier.py" "%mods_path%" > temp_verify_result.json 2>&1
 set verify_exit_code=%errorlevel%
 
 if %verify_exit_code%==0 (
     REM Path verification successful - parse results
-    for /f "usebackq delims=" %%i in (`python ..\updater\json_extract.py temp_verify_result.json mod_count`) do set "mod_count=%%i"
+    for /f "usebackq delims=" %%i in (`python "%~dp0..\updater\json_extract.py" temp_verify_result.json mod_count`) do set "mod_count=%%i"
     del temp_verify_result.json 2>nul
     
     echo !BLUE!Mod folders found: !mod_count!!RESET!
@@ -235,14 +235,14 @@ echo Scanning !BLUE!%mod_count%!RESET! mod folders for conflicts...
 echo This may take a moment...
 echo.
 
-python simple_conflict_checker.py --mods-dir "%mods_path%"
+python "%~dp0simple_conflict_checker.py" --mods-dir "%mods_path%"
 
 echo.
 set /p save_log="!CYAN!Would you like to save these results to a log file?!RESET! (!GREEN!Y!RESET!/!RED!N!RESET!): "
 
 if /i "%save_log%"=="Y" (
     echo.
-    python simple_conflict_checker.py --mods-dir "%mods_path%" > mod_conflicts.log 2>&1
+    python "%~dp0simple_conflict_checker.py" --mods-dir "%mods_path%" > mod_conflicts.log 2>&1
     echo !GREEN!Results saved to: !YELLOW!mod_conflicts.log!RESET!
     echo.
     
