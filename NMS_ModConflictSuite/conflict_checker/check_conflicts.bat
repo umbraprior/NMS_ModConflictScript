@@ -102,7 +102,9 @@ if "%no_mods_choice%"=="1" (
     cls
     goto CUSTOM_PATH
 )
-if "%no_mods_choice%"=="2" goto END
+if "%no_mods_choice%"=="2" (
+    goto END
+)
 
 echo !RED!Invalid choice.!RESET! Please enter 1 or 2.
 goto STEAM_NO_MODS
@@ -145,7 +147,9 @@ if %gamedata_exit_code%==0 (
         cls
         goto CUSTOM_PATH
     )
-    if "%no_gamedata_choice%"=="3" goto END
+    if "%no_gamedata_choice%"=="3" (
+        goto END
+    )
     
     echo !RED!Invalid choice. Please enter 1, 2, or 3.!RESET!
     goto CURRENT_DIR
@@ -213,7 +217,9 @@ if %verify_exit_code%==0 (
 echo Would you like to scan this directory for conflicts?
 set /p confirm="Enter !GREEN!Y!RESET! to continue, !YELLOW!N!RESET! to choose different path, !RED!Q!RESET! to quit: "
 
-if /i "%confirm%"=="Q" goto END
+if /i "%confirm%"=="Q" (
+    goto END
+)
 if /i "%confirm%"=="N" (
     cls
     goto CHOOSE_SOURCE
