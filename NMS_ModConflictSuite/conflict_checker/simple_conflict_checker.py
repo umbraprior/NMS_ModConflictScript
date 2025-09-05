@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Simple No Man's Sky Mod Conflict Checker
-Just shows which mods share the same files.
+Just shows which mods share the same files MBIN.
 """
 
 import os

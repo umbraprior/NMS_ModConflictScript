@@ -18,59 +18,6 @@ set "WHITE=%ESC%[97m"
 title No Man's Sky Mod Conflict Checker
 cls
 
-REM Show loading screen while checking for updates
-echo !CYAN!===============================================================================!RESET!
-echo !CYAN!                    NO MAN'S SKY MOD CONFLICT CHECKER!RESET!
-echo !CYAN!===============================================================================!RESET!
-echo.
-echo !YELLOW!Initializing...!RESET!
-echo.
-echo Checking for updates...
-echo.
-
-REM Check for updates first
-python auto_updater.py --check > temp_update_check.json 2>&1
-set update_check_code=%errorlevel%
-
-REM Clear loading screen
-cls
-
-if %update_check_code%==0 (
-    REM Parse update check result
-    for /f "usebackq delims=" %%i in (`python json_extract.py temp_update_check.json updates_available`) do set "updates_available=%%i"
-    del temp_update_check.json 2>nul
-    
-    if "!updates_available!"=="true" (
-        REM Updates are available - prompt user
-        echo !YELLOW!===============================================================================!RESET!
-        echo !YELLOW!                             UPDATE AVAILABLE!RESET!
-        echo !YELLOW!===============================================================================!RESET!
-        echo.
-        echo !GREEN!A new version of the NMS Mod Conflict Checker is available!!RESET!
-        echo.
-        set /p update_choice="Would you like to update now? (!GREEN!Y!RESET!/!RED!N!RESET!): "
-        
-        if /i "!update_choice!"=="Y" (
-            echo.
-            echo !CYAN!Running auto-updater...!RESET!
-            echo.
-            python auto_updater.py
-            
-            echo.
-            echo !YELLOW!Press any key to continue...!RESET!
-            pause >nul
-            cls
-        ) else (
-            echo.
-            echo !YELLOW!Update skipped.!RESET!
-            timeout /t 2 >nul
-            cls
-        )
-    )
-) else (
-    REM Update check failed, continue silently
-    del temp_update_check.json 2>nul
-)
 
 :CHOOSE_SOURCE
 echo !MAGENTA!===============================================================================!RESET!
@@ -106,13 +53,13 @@ goto CHOOSE_SOURCE
 echo.
 
 REM Call Python script to find Steam installation
-python steam_finder.py > temp_steam_result.json 2>&1
+python "%~dp0..\finders\steam_finder.py" > temp_steam_result.json 2>&1
 set steam_exit_code=%errorlevel%
 
 REM Parse the JSON result
 if %steam_exit_code%==0 (
     REM Steam found with mods - extract mods_path from JSON
-    for /f "usebackq delims=" %%i in (`python json_extract.py temp_steam_result.json mods_path`) do set "mods_path=%%i"
+    for /f "usebackq delims=" %%i in (`python "%~dp0..\updater\json_extract.py" temp_steam_result.json mods_path`) do set "mods_path=%%i"
     del temp_steam_result.json 2>nul
     
     echo !GREEN!Found No Man's Sky with mods at: !YELLOW!!mods_path!!RESET!
@@ -155,7 +102,9 @@ if "%no_mods_choice%"=="1" (
     cls
     goto CUSTOM_PATH
 )
-if "%no_mods_choice%"=="2" goto END
+if "%no_mods_choice%"=="2" (
+    goto END
+)
 
 echo !RED!Invalid choice.!RESET! Please enter 1 or 2.
 goto STEAM_NO_MODS
@@ -165,12 +114,12 @@ echo.
 echo Searching for GAMEDATA folder relative to script location...
 
 REM Call Python script to find GAMEDATA directory
-python gamedata_finder.py > temp_gamedata_result.json 2>&1
+python "%~dp0..\finders\gamedata_finder.py" > temp_gamedata_result.json 2>&1
 set gamedata_exit_code=%errorlevel%
 
 if %gamedata_exit_code%==0 (
     REM GAMEDATA found - extract mods_path from JSON
-    for /f "usebackq delims=" %%i in (`python json_extract.py temp_gamedata_result.json mods_path`) do set "mods_path=%%i"
+    for /f "usebackq delims=" %%i in (`python "%~dp0..\updater\json_extract.py" temp_gamedata_result.json mods_path`) do set "mods_path=%%i"
     del temp_gamedata_result.json 2>nul
     
     echo !GREEN!Found GAMEDATA/MODS at: !CYAN!!mods_path!!RESET!
@@ -190,15 +139,20 @@ if %gamedata_exit_code%==0 (
     echo.
     set /p no_gamedata_choice="Enter your choice (!GREEN!1!RESET!, !BLUE!2!RESET!, or !RED!3!RESET!): "
     
-    if "%no_gamedata_choice%"=="1" (
+    REM Debug: Show what was actually captured
+    echo DEBUG: You entered [!no_gamedata_choice!]
+    
+    if "!no_gamedata_choice!"=="1" (
         cls
         goto STEAM_DETECT
     )
-    if "%no_gamedata_choice%"=="2" (
+    if "!no_gamedata_choice!"=="2" (
         cls
         goto CUSTOM_PATH
     )
-    if "%no_gamedata_choice%"=="3" goto END
+    if "!no_gamedata_choice!"=="3" (
+        goto END
+    )
     
     echo !RED!Invalid choice. Please enter 1, 2, or 3.!RESET!
     goto CURRENT_DIR
@@ -224,12 +178,12 @@ echo Selected path: !CYAN!%mods_path%!RESET!
 echo.
 
 REM Call Python script to verify path and count mods
-python path_verifier.py "%mods_path%" > temp_verify_result.json 2>&1
+python "%~dp0path_verifier.py" "%mods_path%" > temp_verify_result.json 2>&1
 set verify_exit_code=%errorlevel%
 
 if %verify_exit_code%==0 (
     REM Path verification successful - parse results
-    for /f "usebackq delims=" %%i in (`python json_extract.py temp_verify_result.json mod_count`) do set "mod_count=%%i"
+    for /f "usebackq delims=" %%i in (`python "%~dp0..\updater\json_extract.py" temp_verify_result.json mod_count`) do set "mod_count=%%i"
     del temp_verify_result.json 2>nul
     
     echo !BLUE!Mod folders found: !mod_count!!RESET!
@@ -266,7 +220,9 @@ if %verify_exit_code%==0 (
 echo Would you like to scan this directory for conflicts?
 set /p confirm="Enter !GREEN!Y!RESET! to continue, !YELLOW!N!RESET! to choose different path, !RED!Q!RESET! to quit: "
 
-if /i "%confirm%"=="Q" goto END
+if /i "%confirm%"=="Q" (
+    goto END
+)
 if /i "%confirm%"=="N" (
     cls
     goto CHOOSE_SOURCE
@@ -288,14 +244,14 @@ echo Scanning !BLUE!%mod_count%!RESET! mod folders for conflicts...
 echo This may take a moment...
 echo.
 
-python simple_conflict_checker.py --mods-dir "%mods_path%"
+python "%~dp0simple_conflict_checker.py" --mods-dir "%mods_path%"
 
 echo.
 set /p save_log="!CYAN!Would you like to save these results to a log file?!RESET! (!GREEN!Y!RESET!/!RED!N!RESET!): "
 
 if /i "%save_log%"=="Y" (
     echo.
-    python simple_conflict_checker.py --mods-dir "%mods_path%" > mod_conflicts.log 2>&1
+    python "%~dp0simple_conflict_checker.py" --mods-dir "%mods_path%" > mod_conflicts.log 2>&1
     echo !GREEN!Results saved to: !YELLOW!mod_conflicts.log!RESET!
     echo.
     
