@@ -75,7 +75,7 @@ if %update_check_code%==0 (
     for /f "usebackq delims=" %%i in (`python updater\json_extract.py temp_update_check.json updates_available`) do set "updates_available=%%i"
     del temp_update_check.json 2>nul
     
-    if "!updates_available!"=="true" (
+    if "!updates_available!"=="True" (
         REM Updates are available - prompt user
         echo !YELLOW!===============================================================================!RESET!
         echo !YELLOW!                             UPDATE AVAILABLE!RESET!

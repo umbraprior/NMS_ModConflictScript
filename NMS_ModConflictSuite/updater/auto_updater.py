@@ -178,7 +178,15 @@ def check_for_updates(silent=False, include_integrity=False):
                 elif file_info.get("current_hash") is None:
                     missing_files.append(file_info["name"])
                 elif file_info.get("current_hash") != file_info.get("repo_hash"):
-                    if current_version["last_commit"] == latest_commit["sha"]:
+                    # Check if local file was modified from stored version
+                    local_hash = file_info.get("local_hash")
+                    current_hash = file_info.get("current_hash")
+                    repo_hash = file_info.get("repo_hash")
+                    
+                    if not first_run and local_hash and current_hash != local_hash:
+                        # File was modified locally = corruption
+                        corrupted_files.append(file_info["name"])
+                    elif current_version["last_commit"] == latest_commit["sha"]:
                         # Same repo version but different hash = corruption
                         corrupted_files.append(file_info["name"])
                     elif first_run:
@@ -521,6 +529,7 @@ def main():
                 "can_repair": result.get("can_repair", False),
                 "missing_files": result.get("missing_files", []),
                 "corrupted_files": result.get("corrupted_files", []),
+                "updates_available": result.get("updates_available", False),
                 "is_first_run": is_first_run()
             }
             

@@ -139,15 +139,18 @@ if %gamedata_exit_code%==0 (
     echo.
     set /p no_gamedata_choice="Enter your choice (!GREEN!1!RESET!, !BLUE!2!RESET!, or !RED!3!RESET!): "
     
-    if "%no_gamedata_choice%"=="1" (
+    REM Debug: Show what was actually captured
+    echo DEBUG: You entered [!no_gamedata_choice!]
+    
+    if "!no_gamedata_choice!"=="1" (
         cls
         goto STEAM_DETECT
     )
-    if "%no_gamedata_choice%"=="2" (
+    if "!no_gamedata_choice!"=="2" (
         cls
         goto CUSTOM_PATH
     )
-    if "%no_gamedata_choice%"=="3" (
+    if "!no_gamedata_choice!"=="3" (
         goto END
     )
     
