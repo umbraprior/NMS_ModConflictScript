@@ -25,12 +25,15 @@ echo !CYAN!=====================================================================
 echo.
 echo !YELLOW!Initializing...!RESET!
 echo.
-echo !WHITE!• Checking for updates...!RESET!
+echo Checking for updates...
 echo.
 
 REM Check for updates first
 python auto_updater.py --check > temp_update_check.json 2>&1
 set update_check_code=%errorlevel%
+
+REM Clear loading screen
+cls
 
 if %update_check_code%==0 (
     REM Parse update check result
@@ -56,11 +59,13 @@ if %update_check_code%==0 (
             echo.
             echo !YELLOW!Press any key to continue...!RESET!
             pause >nul
+            cls
         ) else (
             echo.
+            echo !YELLOW!Update skipped.!RESET!
             timeout /t 2 >nul
+            cls
         )
-        cls
     )
 ) else (
     REM Update check failed, continue silently
