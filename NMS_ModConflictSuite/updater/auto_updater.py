@@ -527,9 +527,82 @@ def main():
             print(json.dumps(output, indent=2))
             return 0 if result.get("integrity_status") != "critical" else 1
         elif sys.argv[1] == "--repair":
-            # Repair installation (reuse update functionality)
-            result = perform_update()
-            return 0 if result["status"] != "error" else 1
+            # Repair installation by downloading missing/corrupted files
+            try:
+                print("Checking for missing or corrupted files...")
+                result = check_for_updates(silent=False, include_integrity=True)
+                
+                if result.get("integrity_status") == "critical":
+                    missing_files = result.get("missing_files", [])
+                    corrupted_files = result.get("corrupted_files", [])
+                    
+                    if missing_files or corrupted_files:
+                        print(f"Found {len(missing_files)} missing and {len(corrupted_files)} corrupted files")
+                        
+                        # Get latest commit
+                        latest_commit = get_latest_commit()
+                        
+                        # Repair each missing/corrupted file
+                        repaired_count = 0
+                        failed_repairs = []
+                        
+                        for file_name in missing_files + corrupted_files:
+                            try:
+                                print(f"Repairing {file_name}...")
+                                
+                                # Download file content
+                                file_content = get_file_from_repo(file_name, latest_commit["sha"])
+                                
+                                # Determine file path
+                                base_dir = Path(__file__).parent.parent
+                                file_path = base_dir / file_name
+                                
+                                # Create directory if needed
+                                file_path.parent.mkdir(parents=True, exist_ok=True)
+                                
+                                # Create backup if file exists
+                                if file_path.exists():
+                                    backup_path = file_path.with_suffix(file_path.suffix + '.backup')
+                                    file_path.rename(backup_path)
+                                    print(f"  Created backup: {backup_path}")
+                                
+                                # Write new content
+                                with open(file_path, 'w', encoding='utf-8', newline='\n') as f:
+                                    f.write(file_content)
+                                
+                                print(f"  ✓ Successfully repaired {file_name}")
+                                repaired_count += 1
+                                
+                            except Exception as e:
+                                print(f"  ✗ Failed to repair {file_name}: {str(e)}")
+                                failed_repairs.append(file_name)
+                        
+                        print(f"\nRepair complete: {repaired_count} files repaired")
+                        if failed_repairs:
+                            print(f"Failed repairs: {', '.join(failed_repairs)}")
+                            return 1
+                        
+                        # Update version info with current hashes
+                        current_version = load_version_info()
+                        current_version["last_commit"] = latest_commit["sha"]
+                        for file_name in missing_files + corrupted_files:
+                            if file_name not in failed_repairs:
+                                current_hash = get_current_file_hash(file_name)
+                                if current_hash:
+                                    current_version["file_hashes"][file_name] = current_hash
+                        save_version_info(current_version)
+                        
+                        return 0
+                    else:
+                        print("No files need repair.")
+                        return 0
+                else:
+                    print("Installation is healthy - no repairs needed.")
+                    return 0
+                    
+            except Exception as e:
+                print(f"Error during repair: {str(e)}")
+                return 1
     
     # Interactive mode
     try:
