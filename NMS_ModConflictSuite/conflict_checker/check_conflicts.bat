@@ -171,7 +171,7 @@ echo Selected path: !CYAN!%mods_path%!RESET!
 echo.
 
 REM Call Python script to verify path and count mods
-python path_verifier.py "%mods_path%" > temp_verify_result.json 2>&1
+python .\path_verifier.py "%mods_path%" > temp_verify_result.json 2>&1
 set verify_exit_code=%errorlevel%
 
 if %verify_exit_code%==0 (
